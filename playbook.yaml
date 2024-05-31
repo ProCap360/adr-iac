@@ -1,0 +1,73 @@
+---
+- name: install nginx
+  hosts: all
+  become: true
+  become_user: root
+  vars:
+    cert_src: ./certs
+    cert_dest: /etc/letsencrypt/live
+    workspace: adr-poc
+    fqdn: azure.procap360.com
+  tasks:
+    - name: Install nginx
+      apt: name=nginx state=present
+    - name: update nginx config, allow up to 30M body size for files upload
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker_begin: basic_settings_begin
+        marker_end: basic_settings_end
+        insertbefore: "sendfile on;"
+        block: |
+          # allow up to 30M total body size for files upload
+                  client_max_body_size 30M;
+    - name: update nginx config, custom log format
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker_begin: log_format_begin
+        marker_end: log_format_end
+        insertbefore: "access_log"
+        block: |
+          # custom log format
+                  log_format details '$remote_addr - $remote_user [$time_local] '
+                      '$scheme $host[$http_host] "$request" $status $body_bytes_sent '
+                      '"$http_referer" "$http_user_agent"';
+    - name: ngnix config - default port 80 returns 401
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/sites-available/default
+        marker_begin: 401_begin
+        marker_end: 401_end
+        insertafter: "listen \\[::\\]:80 default_server;"
+        block: |
+          # disable default port 80
+                  return 401;
+    - name: copy certificate over
+      ansible.builtin.copy:
+        src: "{{cert_src}}/{{fqdn}}"
+        dest: "{{cert_dest}}"
+    - name: download dhparam
+      ansible.builtin.get_url:
+        url: https://ssl-config.mozilla.org/ffdhe2048.txt
+        dest: /etc/letsencrypt/ssl-dhparams.pem
+        mode: 0644
+    - name: copy procap360 nginx config
+      template:
+        src: templates/procap360-nginx.conf
+        dest: /etc/nginx/sites-available/procap360.conf
+        mode: 0644
+    - name: enable procap360
+      file:
+        src: /etc/nginx/sites-available/procap360.conf
+        dest: /etc/nginx/sites-enabled/procap360.conf
+        state: link
+    - name: check if procap-web artifact exists
+      local_action: stat path='./artifacts/app-build/procap-web.tar.gz'
+      register: web_artifacts
+    - name: install procap-web files
+      ansible.builtin.unarchive:
+        src: ./artifacts/app-build/procap-web.tar.gz
+        dest: /var/www/
+        owner: www-data
+        group: www-data
+      when: web_artifacts.stat.exists
+    - name: restart nginx
+      systemd: state=restarted name=nginx

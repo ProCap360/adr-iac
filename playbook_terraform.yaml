@@ -1,0 +1,32 @@
+---
+- name: create infrastructure
+  hosts: all
+  become: true
+  become_user: root
+  tasks:
+    - name: terraform init
+      become: false
+      shell:
+        cmd: |
+          terraform init
+    - name: terraform apply
+      become: false
+      shell:
+        cmd: |
+          terraform apply -auto-approve
+    - name: obtain ssh private key for remote access
+      become: false
+      shell:
+        cmd: |
+          chmod 600 ssh.pem
+          terraform output -raw ssh_private_key > ssh.pem
+          chmod 400 ssh.pem
+    - name: download certs from S3
+      become: false
+      shell:
+        cmd: |
+          aws --profile $AWS_PROFILE s3 sync "s3://procap360-universal-certificates/" ./certs
+    #- name: unzip azure devops artifacts
+    #  unarchive:
+    #    src: artifacts/app-build.zip
+    #    dest: artifacts
