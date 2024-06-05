@@ -6,7 +6,6 @@
   vars:
     cert_src: ./certs
     cert_dest: /etc/letsencrypt/live
-    workspace: adr-poc
     fqdn: azure.procap360.com
   tasks:
     - name: Install nginx

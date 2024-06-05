@@ -8,12 +8,12 @@
       become: false
       shell:
         cmd: |
-          terraform init
+          terraform init -backend-config="key=procap360{{subdomain}}.tfstate"
     - name: terraform apply
       become: false
       shell:
         cmd: |
-          terraform apply -auto-approve
+          terraform apply -var "subdomain={{subdomain}}" -auto-approve
     - name: obtain ssh private key for remote access
       become: false
       shell:

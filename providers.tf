@@ -18,6 +18,5 @@ terraform {
         resource_group_name = "rg-procap360-global"
         storage_account_name = "procap360tfstate"
         container_name = "terraform-states"
-        key = "procap360adr-poc.tfstate"
     }
 }

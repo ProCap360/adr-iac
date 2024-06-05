@@ -2,7 +2,7 @@
 # resource group
 
 resource "azurerm_resource_group" "adr" {
-    name = "rg-${local.system}"
+    name = "rg-${var.subdomain}"
     location = var.location
 
     tags = local.common_tags
@@ -14,7 +14,7 @@ resource "azurerm_resource_group" "adr" {
 #############################################
 # virtual network
 resource "azurerm_virtual_network" "adr" {
-    name = "vnet-${local.system}"
+    name = "vnet-${var.subdomain}"
     location = var.location
     resource_group_name = azurerm_resource_group.adr.name
     address_space = var.vnet_address_space
@@ -23,7 +23,7 @@ resource "azurerm_virtual_network" "adr" {
 }
 
 resource "azurerm_subnet" "adr" {
-    name = "subnet-${local.system}"
+    name = "subnet-${var.subdomain}"
     resource_group_name = azurerm_resource_group.adr.name
     virtual_network_name = azurerm_virtual_network.adr.name
     address_prefixes = var.subnet_address_space
@@ -43,14 +43,14 @@ resource "tls_private_key" "adr" {
 }
 
 resource "azurerm_public_ip" "adr" {
-    name = "public-ip-${local.system}"
+    name = "public-ip-${var.subdomain}"
     location = var.location
     resource_group_name = azurerm_resource_group.adr.name
     allocation_method   = "Static"
 }
 
 resource "azurerm_network_security_group" "adr" {
-    name = "nsg-${local.system}"
+    name = "nsg-${var.subdomain}"
     location = var.location
     resource_group_name = azurerm_resource_group.adr.name
 
@@ -101,7 +101,7 @@ resource "azurerm_network_security_group" "adr" {
 }
 
 resource "azurerm_network_interface" "adr" {
-    name = "nic-${local.system}"
+    name = "nic-${var.subdomain}"
     location = var.location
     resource_group_name = azurerm_resource_group.adr.name
 
@@ -120,16 +120,16 @@ resource "azurerm_network_interface_security_group_association" "adr" {
 }
 
 resource "azurerm_linux_virtual_machine" "adr" {
-    name = "vm-${local.system}"
+    name = "vm-${var.subdomain}"
     location = var.location
     resource_group_name = azurerm_resource_group.adr.name
     size = var.vm_size
 
-    admin_username = "${local.system}-admin"
+    admin_username = "${var.subdomain}-admin"
     network_interface_ids = [azurerm_network_interface.adr.id]
     
     admin_ssh_key {
-        username = "${local.system}-admin"
+        username = "${var.subdomain}-admin"
         public_key = tls_private_key.adr.public_key_openssh
     }
 
@@ -149,7 +149,7 @@ resource "azurerm_linux_virtual_machine" "adr" {
 }
 
 resource "azurerm_dns_a_record" "adr" {
-    name = local.system
+    name = var.subdomain
     zone_name = "azure.procap360.com"
     resource_group_name = "rg-procap360-global"
     ttl = 300

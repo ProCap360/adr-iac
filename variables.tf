@@ -3,6 +3,11 @@ variable "location" {
     description = "The location of the terraform setup"
     default = "eastus"
 }
+variable "subdomain" {
+    type = string
+    description = "The location of the terraform setup"
+    default = "adr-poc"
+}
 variable "vnet_address_space" {
     type = list(string)
     description = "virtual network"
